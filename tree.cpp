@@ -102,12 +102,13 @@ void Tree::AddNodeHelper(Node *finder, const string wrd){
 }
 
 // print the tree from leftmost node to rightmost node (alphabetical)
-void Tree::PrintTree(){
+void Tree::PrintTree(bool& isEmpty){
   Node* finder = root;
   if(finder!=nullptr) {
     PrintTreeHelper(finder);
   }else {
     cout << "TREE IS EMPTY.\n";
+    isEmpty = true;
   }
   
 }
@@ -132,7 +133,7 @@ void Tree::ExcptHndl(){
 //funciton to find a node by search by its word data piece and deleting it when found
 // pre: user input "wrd" to search for 
 //post: recusively calls helper function that searches through tree and uses logical predecessor to replace node being deleted
-void Tree::NodeSearch(const string wrd) {
+void Tree::NodeSearch(const string wrd, bool& isEmpty) {
   Node* finder = root;
   Node* prevFinder = finder;
 
@@ -140,13 +141,12 @@ void Tree::NodeSearch(const string wrd) {
     finder = NodeSearchHelper(prevFinder, finder, wrd);  // recusively search for word
   }else {
     cerr << "TREE IS EMPTY";
+    isEmpty=true;
   }
   
 }
 
 
-//Pre: takes a type string variable called wrd to search for, a pointer to track the parent node passed by reference and a pointer to track the node we want to delete passed by reference 
-//Post: deletes the node containing wrd and restructures the tree
 Node* Tree::NodeSearchHelper(Node* &prevFinder, Node* &finder, const string wrd) {
   if(finder!=nullptr){
     if (wrd < finder->data.GetWord()) {
@@ -155,8 +155,11 @@ Node* Tree::NodeSearchHelper(Node* &prevFinder, Node* &finder, const string wrd)
     } else if (wrd > finder->data.GetWord()) {
         prevFinder = finder;
         finder->rtPtr = NodeSearchHelper(prevFinder, finder->rtPtr, wrd);
+
+
     } else if(wrd == finder->data.GetWord()){ // wrd == node->data.GetWord()
-        
+        // NO CHILDREN
+
         if (finder->lftPtr == nullptr && finder->rtPtr == nullptr) { // leaf node
             if (finder == root) { // root node
                 root = nullptr;
@@ -169,40 +172,77 @@ Node* Tree::NodeSearchHelper(Node* &prevFinder, Node* &finder, const string wrd)
             }
             delete finder;
             finder = nullptr;
-        } else if (finder->lftPtr != nullptr) { // if node to delete has a right child
-            Node* temp = finder->lftPtr; // temp is right child of found
+
+
+          // IF HAS LEFT CHILD 
+        } else if (finder->lftPtr != nullptr) { // if node to delete has a LEFT child
+		
+
+            Node* temp = finder->lftPtr; // temp is LEFT child of found
             prevFinder = finder;
-            // if the right child of node to be changed has left child, find the leftmost leaf 
+
+            // if the LEFT child(TEMP) of node to be DELETED has RIGHT child, find the RIGHTmost leaf AND MAKE IT TEMP
+
             if(temp->rtPtr != nullptr){
-                while (temp->rtPtr != nullptr) { // while right child of found has a left child
+                while (temp->rtPtr != nullptr) { // 
                     prevFinder=temp;// keep track of the parent of the node we are going to reassign so we can reassign its pointers later 
                     temp = temp->rtPtr; // find the left most child of the right child of the node we are deleting 
                 }
-                
+
+                // AT THIS POINT, THE NODE TO DELETE HAS A LEFT CHILD AND THAT LEFT CHILD HAS RIGHT CHILDREN. TEMP IS THE RIGHTMOST CHILD AND PREV IS ITS PARENT
+
                 if(temp->lftPtr != nullptr) { // the node we will be using to replace has right children so need to reassign to replacement nodes parents left edge
-                   finder->data.SetWord(temp->data.GetWord());// replace word of node to delete 
-                finder->data.SetCnt(temp->data.GetCnt()); // replace count of node to delete
+                  //IF THAT RIGHTMOST CHILD HAS LEFT CHILDREN WE WILL SET OUR NODE TO DELETE TO TEMP(RIGHTMOST CHILD) AND HAVE TEMPS PARENT RIGHT POINTER POINT TO THOSE LEFT CHILDREN
+
+		  finder->data.SetWord(temp->data.GetWord());// replace word of node to delete WITH RIGHTMOST NODE 
+                  finder->data.SetCnt(temp->data.GetCnt()); // replace count of node to delete
                   prevFinder->rtPtr=temp->lftPtr; // set the parent of replacement node to the right subtree of replacement node
-                }else { // replacement node does not have any children and itself is a leaf so reassing its parents left edge 
-                   finder->data.SetWord(temp->data.GetWord());// replace word of node to delete 
-                finder->data.SetCnt(temp->data.GetCnt()); // replace count of node to delete
-                  prevFinder->rtPtr= nullptr;
+
+                }else { // OTHERWISE TEMP(RIGHTMOST CHILD) HAS NO CHILDREN SO SET NODE TO DELETE TO TEMP AND SET ITS PARENT TO NULLPTR
+                  finder->data.SetWord(temp->data.GetWord());// replace word of node to delete 
+                  finder->data.SetCnt(temp->data.GetCnt()); // replace count of node to delete
+
+		
+                  prevFinder->rtPtr= temp->lftPtr;
+                  delete temp; // delete the isolated node 
+			//prevFinder->rtPtr= temp->rtPtr; // IF TEMP IS RIGHTMOST CHILD THEN ITS RIGHT CHILD IS NULLPTR. AND IF PREVFINDER IS ROOT THIS SHOULD REDIRECT TO RIGHT SUBTREE
                 }
+                }else if(temp->rtPtr == nullptr && temp->lftPtr !=nullptr){ // THE NODE TO DELETE HAS A LEFT CHILD THAT HAS NO RIGHT CHILDREN BUT DOES HAVE LEFT CHILDREN SO JUST REPLACE THE NODE TODELETE WITH THE LEFT CHILD 
+		   finder->data.SetWord(temp->data.GetWord());// replace word of node to delete
+		   finder->data.SetCnt(temp->data.GetCnt()); // replace count of node to delete
+		   finder->lftPtr = temp->lftPtr;
+              delete temp; // delete the isolated node 
                 
-                delete temp; // delete the isolated node 
-            } else if(temp->lftPtr == nullptr && temp->rtPtr == nullptr){ // the left child of found is a leaf node
+                
+            
+              
+            } else if(temp->lftPtr == nullptr && temp->rtPtr == nullptr){ // LEFT CHILD OF NODE TO DELETE IS A LEAF 
               
                 finder->data.SetWord(temp->data.GetWord());// replace node to delete 
                 finder->data.SetCnt(temp->data.GetCnt());
-                finder->lftPtr = nullptr; // set the right pointer of the parent node to null
-                delete temp;
+                prevFinder->lftPtr=nullptr;
+                finder->lftPtr = nullptr; // SET THE LEFT POINTER OF NODE TO DELETE TO WHAT TEMP LEFTPTR IS POINTING TO (NULLPTR)
+		// THE RIGHT POINTER OF FINDER SHOULD STILL POINT TO WHAT IT WAS ORIGINALLY POINTING TO. THIS SHOULD HANDLE THE CASE FOR WHEN NODE TO DELETE IS ROOT AND REPLACING IT WITH LEFT NODE WHICH IS A LEAF
+
+                delete temp; // DELETE THE TEMP 
             } 
-        }else if(finder->lftPtr == nullptr && finder->rtPtr != nullptr) {
-          Node* temp = finder->rtPtr;
-          prevFinder->rtPtr = temp;
-          delete finder;
-          finder = nullptr;
-    
+     
+        }else if(finder->lftPtr == nullptr && finder->rtPtr != nullptr) { // NODE TO DELETE ONLY HAS RIGHT CHILDREN
+		// WHAT IF IT IS THE ROOT?? IF IT IS THE ROOT THE TEMP IS A LEAF. ALSO PREVFINDER IS INITIALLIZED TO THE ROOT 
+          if(finder == root){
+            Node* temp = finder;
+            prevFinder = finder;
+            finder = finder->rtPtr;
+            root = finder;
+            delete temp;
+          }
+          else{
+            Node* temp = finder;
+            finder = finder->rtPtr;
+            prevFinder->rtPtr = finder;
+            delete temp;
+          }
+         
         }
     }
   }else{ // word is not in tree
@@ -212,5 +252,6 @@ Node* Tree::NodeSearchHelper(Node* &prevFinder, Node* &finder, const string wrd)
     return finder;
   
 }
+
 
 

@@ -16,9 +16,9 @@ class Tree {
     void Destroy(Node *&tree);
     void AddNode(const string word);
     void AddNodeHelper(Node*, const string word);
-    void PrintTree();
+    void PrintTree(bool& isEmpty);
     void PrintTreeHelper(Node*);
-    void NodeSearch(const string wrd);
+    void NodeSearch(const string wrd, bool& isEmpty);
     Node* NodeSearchHelper(Node* &prevFinder, Node* &finder, const string wrd);
     void ExcptHndl();
 

@@ -1,10 +1,5 @@
 //Calderon, Gregory
 
-/******** Instructor's Feedback Do NOT DELETE
-
-check feedback.md
-
-*********/
 #include <iostream>
 #include <fstream>
 #include <cctype>
@@ -23,8 +18,8 @@ int GetFileSize(fstream&);
 void DelPnct(fstream&, int);
 void DelFours(fstream&);
 void BuildTree(fstream&, Tree&);
-void PrintTree(Tree&);
-void DeleteWord(fstream& inData, Tree& alphaTree);
+void PrintTree(Tree&, bool&);
+void DeleteWord(fstream& inData, Tree& alphaTree, bool& isEmpty);
 
 enum MenuOps {
   PREP_INP =1,
@@ -124,16 +119,16 @@ void BuildTree(fstream& inData, Tree& alphaTree){
   inData.seekg(0, inData.beg);
 }
 
-void PrintTree(Tree &alphaTree) {
-  alphaTree.PrintTree();
+void PrintTree(Tree &alphaTree, bool& isEmpty) {
+  alphaTree.PrintTree(isEmpty);
 }
 
-void DeleteWord(fstream& inData, Tree& alphaTree){
+void DeleteWord(fstream& inData, Tree& alphaTree, bool& isEmpty){
   string delWrd;
   cout << "Delete Word: ";
   cin >> delWrd;
   TransformToUpper(delWrd);
-  alphaTree.NodeSearch(delWrd);
+  alphaTree.NodeSearch(delWrd, isEmpty);
   string inpWord;
   inData.clear();
   inData.seekg(0, inData.beg);
@@ -174,6 +169,7 @@ void MainMenu(fstream& inData, Tree& alphaTree) {
   int choice = -1;
   bool isTreeBuilt=false;
   bool isFilePrep=false;
+  bool isEmpty=false;
   do {
     cout << "\n**MENU**\n"
           "1. Prepare Input\n"
@@ -199,15 +195,18 @@ void MainMenu(fstream& inData, Tree& alphaTree) {
         
         break;
       case PRINT_TREE_ALPHA:
-        if(isTreeBuilt) {
-          PrintTree(alphaTree);
+        if(isTreeBuilt && isFilePrep) {
+          PrintTree(alphaTree, isEmpty);
         }else {
           cout << "ERROR. NO TREE HAS BEEN BUILT.\n";
         }        
         break;
       case DELETE_WRD:
-        if(isTreeBuilt) {
-          DeleteWord(inData, alphaTree);
+        if(isTreeBuilt && !isEmpty) { 
+          DeleteWord(inData, alphaTree, isEmpty);
+        }else if(isEmpty){
+          cout << "ERROR. TREE IS EMPTY.\n";
+          //isFilePrep=false;
         }else {
           cout << "ERROR. NO TREE HAS BEEN BUILT.\n";
         }
